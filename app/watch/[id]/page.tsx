@@ -5,11 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function WatchPage({ params }: { params: { id: string } }) {
+export default async function WatchPage({ params, searchParams }: { params: { id: string }, searchParams: { dub?: string } }) {
   const { id } = await params;
+  const { dub } = await searchParams;
+  const isDub = dub === '1' || dub === 'true';
   
   // Fetch sources
-  const sourcesData = await getEpisodeSources(id);
+  const sourcesData = await getEpisodeSources(id, isDub);
   
   // We need anime details to show the episode list sidebar.
   // The episode ID usually contains the anime ID, but parsing it is unreliable.
@@ -40,20 +42,48 @@ export default async function WatchPage({ params }: { params: { id: string } }) 
     );
   }
 
+  // Extract subtitles
+  const trackList = sourcesData?.tracks || sourcesData?.subtitles || [];
+  const subtitles = trackList
+    .filter((t: any) => t.kind !== 'thumbnails' && (t.file || t.url))
+    .map((t: any) => ({
+      url: t.file || t.url,
+      lang: t.label || t.lang,
+      label: t.label || t.lang,
+      kind: 'subtitles' // Force kind to subtitles for consistent display
+    }));
+
   return (
     <div className="pt-24 pb-12 px-4 md:px-8 min-h-screen">
       <div className="flex flex-col lg:flex-row gap-8 max-w-[1800px] mx-auto">
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <Player src={playUrl || ""} />
+          <Player src={playUrl || ""} subtitles={subtitles} key={isDub ? 'dub' : 'sub'} />
           
           <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-lg md:text-2xl font-bold text-white mb-2 line-clamp-2">{anime?.title || id}</h1>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-lg md:text-2xl font-bold text-white line-clamp-2">{anime?.title || id}</h1>
               <div className="flex items-center gap-4 text-xs md:text-sm text-slate-400">
                  <span>Episode {id.split("-episode-")[1] || "?"}</span>
                  <span className="hidden md:inline">•</span>
                  <span className="hidden md:inline">HD</span>
+              </div>
+              
+              <div className="flex items-center gap-2 mt-2">
+                <Link 
+                  href={`/watch/${id}`} 
+                  scroll={false}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${!isDub ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  SUB
+                </Link>
+                <Link 
+                  href={`/watch/${id}?dub=1`} 
+                  scroll={false}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${isDub ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  DUB
+                </Link>
               </div>
             </div>
             

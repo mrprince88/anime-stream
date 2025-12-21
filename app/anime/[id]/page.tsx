@@ -1,5 +1,7 @@
 import { getAnimeDetails } from "@/lib/api";
 import { AnimeCard } from "@/components/features/AnimeCard";
+import { AnimePlayer } from "@/components/features/AnimePlayer";
+import { WatchButton } from "@/components/features/WatchButton";
 import { Play, Star, Calendar, Clock, Share2, Heart, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,12 +41,14 @@ export default async function AnimeDetail({ params }: { params: { id: string } }
         <div className="flex flex-col md:flex-row gap-10">
           {/* Poster */}
           <div className="shrink-0 w-64 md:w-80 rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/5 mx-auto md:mx-0">
-            <div className="relative aspect-[2/3]">
+            <div className="relative aspect-[2/3] overflow-hidden">
               <Image
                 src={coverImage}
                 alt={anime.title}
                 fill
+                sizes="(max-width: 768px) 256px, 320px"
                 className="object-cover"
+                priority
               />
             </div>
           </div>
@@ -63,19 +67,7 @@ export default async function AnimeDetail({ params }: { params: { id: string } }
             </div>
 
             <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-10">
-              {anime.episodes && anime.episodes.length > 0 ? (
-                <Link
-                  href={`/watch/${anime.episodes[0].id}`}
-                  className="flex items-center gap-3 px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all hover:scale-105 shadow-lg shadow-violet-600/25"
-                >
-                  <Play className="w-5 h-5 fill-current" />
-                  Watch Episode 1
-                </Link>
-              ) : (
-                <button disabled className="px-8 py-3.5 bg-slate-700 text-slate-400 rounded-xl font-bold cursor-not-allowed">
-                  No Episodes Available
-                </button>
-              )}
+              <WatchButton hasEpisodes={!!(anime.episodes && anime.episodes.length > 0)} />
               
               <button className="p-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors">
                 <Heart className="w-5 h-5" />
@@ -99,22 +91,14 @@ export default async function AnimeDetail({ params }: { params: { id: string } }
           </div>
         </div>
 
-        {/* Episodes Section */}
+        {/* Episodes Section with Video Player */}
         {anime.episodes && anime.episodes.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold text-white mb-6 border-l-4 border-violet-500 pl-4">Episodes ({anime.episodes.length})</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {anime.episodes.map((ep) => (
-                <Link 
-                  key={ep.id}
-                  href={`/watch/${ep.id}`}
-                  className="group block p-3 rounded-lg bg-slate-900 border border-white/5 hover:border-violet-500/50 hover:bg-slate-800 transition-all text-center"
-                >
-                  <div className="text-lg font-bold text-slate-200 group-hover:text-violet-400">EP {ep.number}</div>
-                  <div className="text-xs text-slate-500 mt-1">Episode {ep.number}</div>
-                </Link>
-              ))}
-            </div>
+            <AnimePlayer 
+              animeId={anime.id}
+              animeTitle={anime.title}
+              episodes={anime.episodes}
+            />
           </div>
         )}
 

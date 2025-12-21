@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, PlayCircle } from "lucide-react";
+import { Star, PlayCircle, PlayIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -30,7 +30,7 @@ export function AnimeCard({ id, title, image, rating, episode, type }: AnimeCard
       {/* Play Button Overlay */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <div className="w-12 h-12 rounded-full bg-violet-600 flex items-center justify-center text-white shadow-lg transform scale-50 group-hover:scale-100 transition-transform">
-          <PlayCircle className="w-6 h-6 fill-current" />
+          <PlayIcon className="w-6 h-6 fill-current" />
         </div>
       </div>
 

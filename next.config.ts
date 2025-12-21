@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "s4.anilist.co",
       },
+      {
+        protocol: "https",
+        hostname: "static.anikai.to",
+      },
     ],
   },
 };

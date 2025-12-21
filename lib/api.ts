@@ -57,18 +57,6 @@ export async function getTrendingAnime(): Promise<Anime[]> {
   })) || [];
 }
 
-export async function getRecentEpisodes(): Promise<Anime[]> {
-  const data = await fetchJson("/recent-episodes");
-  return data?.results?.map((item: any) => ({
-    id: item.id,
-    title: getTitle(item.title),
-    image: item.image,
-    url: item.url,
-    episodeNumber: item.episodeNumber,
-    rating: item.rating,
-    type: item.type
-  })) || [];
-}
 
 export async function searchAnime(query: string, page: number = 1): Promise<Anime[]> {
   const data = await fetchJson(`/${encodeURIComponent(query)}?page=${page}`);
@@ -85,15 +73,31 @@ export async function searchAnime(query: string, page: number = 1): Promise<Anim
 }
 
 export async function getAnimeDetails(id: string): Promise<AnimeDetails | null> {
-  const data = await fetchJson(`/info/${id}`);
+  const data = await fetchJson(`/data/${id}`);
   if (!data) return null;
+  
+  // Fetch episodes separately since /data/ endpoint doesn't include them
+  let episodes: { id: string; number: number; url?: string }[] | undefined = undefined;
+  try {
+    const episodesData = await fetchJson(`/episodes/${id}`);
+    if (episodesData && Array.isArray(episodesData)) {
+      episodes = episodesData.map((ep: any) => ({
+        id: ep.id,
+        number: ep.number,
+        url: ep.url
+      }));
+    }
+  } catch (error) {
+    console.error(`Error fetching episodes for ${id}:`, error);
+    // Continue without episodes if fetch fails
+  }
   
   return {
     id: data.id,
     title: getTitle(data.title),
     image: data.image,
     description: data.description,
-    otherName: data.otherName, // Anilist might not have this or it might be synonyms
+    otherName: data.otherName,
     totalEpisodes: data.totalEpisodes,
     status: data.status,
     releaseDate: data.releaseDate,
@@ -109,23 +113,19 @@ export async function getAnimeDetails(id: string): Promise<AnimeDetails | null> 
       type: rec.type,
       episodeNumber: rec.episodes
     })) || [],
-    episodes: data.episodes?.map((ep: any) => ({
-      id: ep.id,
-      number: ep.number,
-      url: ep.url
-    }))
+    episodes: episodes
   };
 }
 
-export async function getEpisodeSources(episodeId: string) {
-  const data = await fetchJson(`/watch/${episodeId}`);
+export async function getEpisodeSources(episodeId: string, dub: boolean = false) {
+  const data = await fetchJson(`/watch/${episodeId}${dub ? '?dub=true' : ''}`);
   return data;
 }
 
-// AnimeKai category endpoints
+// Category endpoints using Anilist Advanced Search
 export async function getTVAnime(page: number = 1): Promise<Anime[]> {
   try {
-    const res = await fetch(`https://api.consumet.org/anime/animekai/tv?page=${page}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE_URL}/advanced-search?format=TV&sort=["POPULARITY_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
     const data = await res.json();
     return data?.results?.map((item: any) => ({
@@ -134,7 +134,9 @@ export async function getTVAnime(page: number = 1): Promise<Anime[]> {
       image: item.image,
       url: item.url,
       type: 'TV',
-      subOrDub: item.subOrDub
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined,
+      episodeNumber: item.episodeNumber || item.totalEpisodes
     })) || [];
   } catch (error) {
     console.error('Error fetching TV anime:', error);
@@ -144,7 +146,7 @@ export async function getTVAnime(page: number = 1): Promise<Anime[]> {
 
 export async function getOVAAnime(page: number = 1): Promise<Anime[]> {
   try {
-    const res = await fetch(`https://api.consumet.org/anime/animekai/ova?page=${page}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE_URL}/advanced-search?format=OVA&sort=["POPULARITY_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
     const data = await res.json();
     return data?.results?.map((item: any) => ({
@@ -153,7 +155,9 @@ export async function getOVAAnime(page: number = 1): Promise<Anime[]> {
       image: item.image,
       url: item.url,
       type: 'OVA',
-      subOrDub: item.subOrDub
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined,
+      episodeNumber: item.episodeNumber || item.totalEpisodes
     })) || [];
   } catch (error) {
     console.error('Error fetching OVA anime:', error);
@@ -163,7 +167,7 @@ export async function getOVAAnime(page: number = 1): Promise<Anime[]> {
 
 export async function getSpecialAnime(page: number = 1): Promise<Anime[]> {
   try {
-    const res = await fetch(`https://api.consumet.org/anime/animekai/special?page=${page}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE_URL}/advanced-search?format=SPECIAL&sort=["POPULARITY_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
     const data = await res.json();
     return data?.results?.map((item: any) => ({
@@ -172,10 +176,95 @@ export async function getSpecialAnime(page: number = 1): Promise<Anime[]> {
       image: item.image,
       url: item.url,
       type: 'Special',
-      subOrDub: item.subOrDub
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined,
+      episodeNumber: item.episodeNumber || item.totalEpisodes
     })) || [];
   } catch (error) {
     console.error('Error fetching special anime:', error);
+    return [];
+  }
+}
+
+export async function getMovies(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/advanced-search?format=MOVIE&sort=["POPULARITY_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'MOVIE',
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching movies:', error);
+    return [];
+  }
+}
+
+export async function getONA(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/advanced-search?format=ONA&sort=["POPULARITY_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'ONA',
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined,
+      episodeNumber: item.episodeNumber || item.totalEpisodes
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching ONA:', error);
+    return [];
+  }
+}
+
+export async function getRecentEpisodes(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/advanced-search?status=RELEASING&sort=["UPDATED_AT_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'TV',
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined,
+      episodeNumber: item.episodeNumber || item.currentEpisode || item.totalEpisodes
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching recent episodes:', error);
+    return [];
+  }
+}
+
+export async function getRecentAdded(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/advanced-search?sort=["ID_DESC"]&page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'TV',
+      subOrDub: item.subOrDub,
+      rating: item.rating ? Math.round(item.rating / 10 * 10) / 10 : undefined,
+      episodeNumber: item.episodeNumber || item.totalEpisodes
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching recent added:', error);
     return [];
   }
 }

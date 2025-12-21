@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "Referer": "https://megacloud.blog/embed-2/v3/e-1/rF9Juxvz3NYf?k=1"
+  },
+  "sources": [
+    {
+      "url": "https://dc.netmagcdn.com:2228/hls-playback/71f87b4028d27b3ba749bd2029f3248245618a740ca81a9a9863f257784436f85c939482f4d306945639b935dc612f2314c58465954aef04743515e3025f0938bec14648cd11841f01480941747b2ff6751172a4a4fe82330690c32a39d2aa922f37bfae28154e999822006b4d8df8ce84c2648aadaa27e86aec10b5f8870f5efaa2368ec07062cf05b1e26c5e110dfd/master.m3u8",
+      "quality": "auto",
+      "isM3U8": true
+    }
+  ],
+  "subtitles": [
+    {
+      "lang": "English",
+      "kind": "captions"
+    }
+  ]
+}
