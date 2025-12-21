@@ -83,9 +83,10 @@ export default async function AnimeDetail({ params }: { params: { id: string } }
             </div>
 
             <div className="prose prose-invert max-w-4xl mx-auto md:mx-0 mb-10">
-              <p className="text-slate-300 leading-relaxed text-lg">
-                {anime.description}
-              </p>
+              <p 
+                className="text-slate-300 leading-relaxed text-lg pt-10"
+                dangerouslySetInnerHTML={{ __html: anime.description || '' }}
+              />
             </div>
             
             <div className="flex flex-wrap gap-2 mb-8 justify-center md:justify-start">

@@ -121,3 +121,61 @@ export async function getEpisodeSources(episodeId: string) {
   const data = await fetchJson(`/watch/${episodeId}`);
   return data;
 }
+
+// AnimeKai category endpoints
+export async function getTVAnime(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`https://api.consumet.org/anime/animekai/tv?page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'TV',
+      subOrDub: item.subOrDub
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching TV anime:', error);
+    return [];
+  }
+}
+
+export async function getOVAAnime(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`https://api.consumet.org/anime/animekai/ova?page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'OVA',
+      subOrDub: item.subOrDub
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching OVA anime:', error);
+    return [];
+  }
+}
+
+export async function getSpecialAnime(page: number = 1): Promise<Anime[]> {
+  try {
+    const res = await fetch(`https://api.consumet.org/anime/animekai/special?page=${page}`, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    return data?.results?.map((item: any) => ({
+      id: item.id,
+      title: getTitle(item.title),
+      image: item.image,
+      url: item.url,
+      type: 'Special',
+      subOrDub: item.subOrDub
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching special anime:', error);
+    return [];
+  }
+}

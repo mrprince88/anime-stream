@@ -39,24 +39,11 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          {["Home", "Trending", "Categories", "Schedule"].map((item) => (
-            <Link
-              key={item}
-              href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors relative group"
-            >
-              {item}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-violet-500 transition-all group-hover:w-full" />
-            </Link>
-          ))}
-        </div>
-
         {/* Actions */}
         <div className="flex items-center gap-4">
-          <button className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors">
+          <Link href="/search" className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors">
             <Search className="w-5 h-5" />
-          </button>
+          </Link>
           <button className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors">
             <User className="w-5 h-5" />
           </button>
