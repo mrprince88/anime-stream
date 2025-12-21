@@ -40,8 +40,8 @@ export default async function AnimeDetail({ params }: { params: { id: string } }
       <div className="container mx-auto px-6 relative -mt-64 z-10">
         <div className="flex flex-col md:flex-row gap-10">
           {/* Poster */}
-          <div className="shrink-0 w-64 md:w-80 rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/5 mx-auto md:mx-0">
-            <div className="relative aspect-[2/3] overflow-hidden">
+          <div className="shrink-0 w-64 md:w-80 rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/5 mx-auto md:mx-0 h-fit">
+            <div className="relative aspect-2/3 overflow-hidden">
               <Image
                 src={coverImage}
                 alt={anime.title}

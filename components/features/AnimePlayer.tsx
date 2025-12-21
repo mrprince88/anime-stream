@@ -26,7 +26,7 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
   const [loading, setLoading] = useState(false);
   const [isDub, setIsDub] = useState(false);
   const [availableServers, setAvailableServers] = useState<any[]>([]);
-  const [selectedServer, setSelectedServer] = useState<string>("default");
+  const [selectedServer, setSelectedServer] = useState<string>("");
 
   useEffect(() => {
     if (!selectedEpisode) return;
@@ -40,7 +40,6 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
         // Store all available sources/servers
         const sources = data?.sources || [];
         setAvailableServers(sources);
-        console.log('Available servers:', sources); // Debug log
         
         // Initialize selectedServer with first server if not set
         if (!selectedServer && sources.length > 0) {
@@ -61,6 +60,7 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
         }
 
         // Extract and process subtitles
+        
         const trackList = data?.tracks || data?.subtitles || [];
         const subs = trackList
           .filter((t: any) => t.kind !== 'thumbnails' && (t.file || t.url))
@@ -71,8 +71,6 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
             kind: 'subtitles' as const
           }));
         setSubtitles(subs);
-        
-        console.log('Loaded subtitles:', subs); // Debug log
       } catch (error) {
         console.error("Error fetching episode sources:", error);
       } finally {

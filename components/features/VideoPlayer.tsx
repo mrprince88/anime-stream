@@ -18,11 +18,25 @@ interface PlayerProps {
 }
 
 export function Player({ src, subtitles = [] }: PlayerProps) {
+  
   return (
     <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/5">
-      <MediaPlayer src={src} title="Details" aspectRatio="16/9">
+      <MediaPlayer 
+        src={src} 
+        title="Anime Episode" 
+        aspectRatio="16/9"
+        crossOrigin="anonymous"
+        playsInline
+        onLoadedMetadata={(event: any) => {
+          // Metadata loaded
+        }}
+        onTextTracksChange={(tracks: any) => {
+          // Text tracks changed
+        }}
+      >
         <MediaProvider />
-        {subtitles.map((track, index) => (
+        {/* Only add Track components if subtitles have URLs */}
+        {subtitles.length > 0 && subtitles.map((track, index) => (
           <Track
             key={String(index)}
             src={track.url}
@@ -32,7 +46,11 @@ export function Player({ src, subtitles = [] }: PlayerProps) {
             default={index === 0} 
           />
         ))}
-        <DefaultVideoLayout icons={defaultLayoutIcons} />
+        <DefaultVideoLayout 
+          icons={defaultLayoutIcons}
+          thumbnails=""
+          noScrubGesture={false}
+        />
       </MediaPlayer>
     </div>
   );

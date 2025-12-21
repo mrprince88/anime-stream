@@ -89,7 +89,7 @@ export function Hero({ items }: HeroProps) {
 
               <div className="flex flex-wrap items-center gap-4 pt-4">
                 <Link
-                  href={`/anime/${currentItem.id}`}
+                  href={`/anime/${currentItem.id}#player-section`}
                   className="flex items-center gap-2 px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-violet-600/25"
                 >
                   <Play className="w-5 h-5 fill-current" />
