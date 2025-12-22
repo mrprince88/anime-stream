@@ -12,8 +12,6 @@ export async function GET(request: NextRequest) {
 
   try {
     const sources = await getEpisodeSources(id, dub);
-
-    console.log("sources",sources);
     
     return NextResponse.json(sources);
   } catch (error) {
