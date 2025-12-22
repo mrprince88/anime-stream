@@ -25,6 +25,8 @@ export interface AnimeDetails extends Anime {
     id: string;
     number: number;
     url?: string;
+    isDubbed?: boolean;
+    isSubbed?: boolean;
   }[];
 }
 
@@ -75,23 +77,25 @@ export async function searchAnime(query: string, page: number = 1): Promise<Anim
 export async function getAnimeDetails(id: string): Promise<AnimeDetails | null> {
   const data = await fetchJson(`/data/${id}`);
   if (!data) return null;
-  
+
   // Fetch episodes separately since /data/ endpoint doesn't include them
-  let episodes: { id: string; number: number; url?: string }[] | undefined = undefined;
+  let episodes: { id: string; number: number; url?: string; isDubbed?: boolean; isSubbed?: boolean }[] | undefined = undefined;
   try {
     const episodesData = await fetchJson(`/episodes/${id}`);
     if (episodesData && Array.isArray(episodesData)) {
       episodes = episodesData.map((ep: any) => ({
         id: ep.id,
         number: ep.number,
-        url: ep.url
+        url: ep.url,
+        isDubbed: ep.isDubbed,
+        isSubbed: ep.isSubbed
       }));
     }
   } catch (error) {
     console.error(`Error fetching episodes for ${id}:`, error);
     // Continue without episodes if fetch fails
   }
-  
+
   return {
     id: data.id,
     title: getTitle(data.title),

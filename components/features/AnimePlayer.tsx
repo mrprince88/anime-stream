@@ -9,6 +9,8 @@ interface Episode {
   id: string;
   number: number;
   url?: string;
+  isDubbed?: boolean;
+  isSubbed?: boolean;
 }
 
 interface AnimePlayerProps {
@@ -22,11 +24,11 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
     episodes && episodes.length > 0 ? episodes[0].id : null
   );
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [subtitles, setSubtitles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isDub, setIsDub] = useState(false);
-  const [availableServers, setAvailableServers] = useState<any[]>([]);
-  const [selectedServer, setSelectedServer] = useState<string>("");
+  const [availableQualities, setAvailableQualities] = useState<any[]>([]);
+  const [selectedQuality, setSelectedQuality] = useState<string>("");
+
+
 
   useEffect(() => {
     if (!selectedEpisode) return;
@@ -34,24 +36,34 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
     const fetchEpisodeSources = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/episode-sources?id=${selectedEpisode}&dub=${isDub}`);
+        const res = await fetch(`/api/episode-sources?id=${selectedEpisode}`);
         const data = await res.json();
-        
-        // Store all available sources/servers
+
+        // Store all available sources/qualities
         const sources = data?.sources || [];
-        setAvailableServers(sources);
-        
-        // Initialize selectedServer with first server if not set
-        if (!selectedServer && sources.length > 0) {
-          setSelectedServer(sources[0].quality);
+        setAvailableQualities(sources);
+
+        // Initialize selectedQuality with first source (usually auto) if not set or valid
+        // We prefer 'auto' or 'default' if available
+        let defaultQuality = "";
+        if (sources.length > 0) {
+          const auto = sources.find((s: any) => s.quality === "auto");
+          const dflt = sources.find((s: any) => s.quality === "default");
+          defaultQuality = (auto || dflt || sources[0]).quality;
         }
-        
-        // Find the selected server or default
-        const selectedSource = sources.find((s: any) => s.quality === selectedServer) 
-          || sources.find((s: any) => s.quality === "default") 
-          || sources.find((s: any) => s.quality === "auto")
-          || sources[0];
-        
+
+        // If currently selected quality is not in the new list, reset to default
+        // Or if we just loaded
+        const currentQualityExists = sources.some((s: any) => s.quality === selectedQuality);
+        const qualityToUse = (selectedQuality && currentQualityExists) ? selectedQuality : defaultQuality;
+
+        if (selectedQuality !== qualityToUse) {
+          setSelectedQuality(qualityToUse);
+        }
+
+        // Find the selected source URL
+        const selectedSource = sources.find((s: any) => s.quality === qualityToUse);
+
         if (selectedSource?.url && data?.headers) {
           const proxyUrl = `/api/proxy?url=${encodeURIComponent(selectedSource.url)}&headers=${encodeURIComponent(JSON.stringify(data.headers))}`;
           setVideoUrl(proxyUrl);
@@ -59,18 +71,7 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
           setVideoUrl(selectedSource.url);
         }
 
-        // Extract and process subtitles
-        
-        const trackList = data?.tracks || data?.subtitles || [];
-        const subs = trackList
-          .filter((t: any) => t.kind !== 'thumbnails' && (t.file || t.url))
-          .map((t: any) => ({
-            url: t.file || t.url,
-            lang: t.label || t.lang || 'English',
-            label: t.label || t.lang || 'English',
-            kind: 'subtitles' as const
-          }));
-        setSubtitles(subs);
+
       } catch (error) {
         console.error("Error fetching episode sources:", error);
       } finally {
@@ -79,13 +80,14 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
     };
 
     fetchEpisodeSources();
-  }, [selectedEpisode, isDub, selectedServer]);
+  }, [selectedEpisode, selectedQuality]);
 
   if (!episodes || episodes.length === 0) {
     return null;
   }
 
-  const currentEpisodeNumber = episodes.find(ep => ep.id === selectedEpisode)?.number;
+  const currentEpisode = episodes.find(ep => ep.id === selectedEpisode);
+  const currentEpisodeNumber = currentEpisode?.number;
 
   return (
     <div className="mb-16" id="player-section">
@@ -100,7 +102,7 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
                     <div className="text-white">Loading episode...</div>
                   </div>
                 ) : videoUrl ? (
-                  <Player src={videoUrl} subtitles={subtitles} key={`${selectedEpisode}-${isDub}`} />
+                  <Player src={videoUrl} subtitles={[]} key={`${selectedEpisode}`} />
                 ) : (
                   <div className="aspect-video bg-slate-900 rounded-xl flex items-center justify-center">
                     <div className="text-white">No video source available</div>
@@ -115,56 +117,27 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
                     {animeTitle} - Episode {currentEpisodeNumber}
                   </h3>
                 </div>
-                
-                {/* Sub/Dub Toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-medium">Language:</span>
-                  <button
-                    onClick={() => setIsDub(false)}
-                    className={`px-3 py-1 rounded text-xs font-bold transition-colors ${!isDub ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                  >
-                    SUB
-                  </button>
-                  <button
-                    onClick={() => setIsDub(true)}
-                    className={`px-3 py-1 rounded text-xs font-bold transition-colors ${isDub ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                  >
-                    DUB
-                  </button>
-                </div>
 
-                {/* Server Selection & Subtitle Info */}
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Server Selection */}
-                  {availableServers.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400 font-medium">Server:</span>
-                      {availableServers.map((server, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setSelectedServer(server.quality)}
-                          className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
-                            selectedServer === server.quality 
-                              ? 'bg-violet-600 text-white' 
-                              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                {/* Quality Selection */}
+                {availableQualities.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">Quality:</span>
+                    {availableQualities.map((source, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedQuality(source.quality)}
+                        className={`px-3 py-1 rounded text-xs font-bold transition-colors ${selectedQuality === source.quality
+                          ? 'bg-violet-600 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                           }`}
-                        >
-                          {server.quality === 'default' ? 'Default' : 
-                           server.quality === 'auto' ? 'Auto' :
-                           server.quality.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Subtitle Count Indicator */}
-                  {subtitles.length > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <span>📝</span>
-                      <span>{subtitles.length} subtitle{subtitles.length > 1 ? 's' : ''}</span>
-                    </div>
-                  )}
-                </div>
+                      >
+                        {source.quality === 'default' ? 'Default' :
+                          source.quality === 'auto' ? 'Auto' :
+                            source.quality.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -174,18 +147,17 @@ export function AnimePlayer({ animeId, animeTitle, episodes }: AnimePlayerProps)
                 <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0 bg-slate-900 z-10">
                   <h3 className="font-bold text-white">Episodes ({episodes.length})</h3>
                 </div>
-                
+
                 <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
                   <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-4 gap-2">
                     {episodes.map((ep) => (
                       <button
                         key={ep.id}
                         onClick={() => setSelectedEpisode(ep.id)}
-                        className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${
-                          ep.id === selectedEpisode
-                            ? 'bg-violet-600 border-violet-500 text-white'
-                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
-                        }`}
+                        className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${ep.id === selectedEpisode
+                          ? 'bg-violet-600 border-violet-500 text-white'
+                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
+                          }`}
                       >
                         <span className="text-sm font-bold">{ep.number}</span>
                       </button>

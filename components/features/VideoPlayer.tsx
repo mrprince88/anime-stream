@@ -9,7 +9,7 @@ export interface Subtitle {
   url: string;
   lang: string;
   label: string;
-  kind: "subtitles" | "captions" | "chapters" | "descriptions" | "metadata"; 
+  kind: "subtitles" | "captions" | "chapters" | "descriptions" | "metadata";
 }
 
 interface PlayerProps {
@@ -18,21 +18,15 @@ interface PlayerProps {
 }
 
 export function Player({ src, subtitles = [] }: PlayerProps) {
-  
+
   return (
     <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/5">
-      <MediaPlayer 
-        src={src} 
-        title="Anime Episode" 
+      <MediaPlayer
+        src={src}
+        title="Anime Episode"
         aspectRatio="16/9"
         crossOrigin="anonymous"
         playsInline
-        onLoadedMetadata={(event: any) => {
-          // Metadata loaded
-        }}
-        onTextTracksChange={(tracks: any) => {
-          // Text tracks changed
-        }}
       >
         <MediaProvider />
         {/* Only add Track components if subtitles have URLs */}
@@ -43,10 +37,10 @@ export function Player({ src, subtitles = [] }: PlayerProps) {
             kind={track.kind}
             label={track.label}
             lang={track.lang}
-            default={index === 0} 
+            default={index === 0}
           />
         ))}
-        <DefaultVideoLayout 
+        <DefaultVideoLayout
           icons={defaultLayoutIcons}
           thumbnails=""
           noScrubGesture={false}
