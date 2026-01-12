@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HLS Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }</style>
+</head>
+<body>
+    <h1>Standalone HLS.js Test</h1>
+    <video id="video" controls style="width: 80%; max-width: 800px; border: 1px solid #333;"></video>
+    <pre id="log" style="margin-top: 20px; font-family: monospace; color: #aaa;"></pre>
+
+    <script>
+        const BASE = "https://api-consumet-ruddy.vercel.app/meta/anilist";
+        const EP_ID = "one-piece-100$episode$2142";
+        const PROVIDER = "animekai";
+        
+        async function init() {
+            const log = (msg) => document.getElementById('log').innerText += msg + '\n';
+            log(`Fetching source for ${EP_ID}...`);
+            
+            try {
+                const res = await fetch(`${BASE}/watch/${EP_ID}?provider=${PROVIDER}`);
+                const data = await res.json();
+                
+                const source = data.sources?.find(s => s.url);
+                if (!source) throw new Error("No source found");
+
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(source.url)}&headers=${encodeURIComponent(JSON.stringify(data.headers))}`;
+                log(`Proxy URL: ${proxyUrl}`);
+
+                const video = document.getElementById('video');
+                if (Hls.isSupported()) {
+                    const hls = new Hls({ debug: true });
+                    hls.loadSource(proxyUrl);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        log("Manifest parsed, attempting play...");
+                        video.play().catch(e => log("Play failed: " + e));
+                    });
+                    hls.on(Hls.Events.ERROR, function (event, data) {
+                        log(`HLS Error: ${data.type} - ${data.details}`);
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = proxyUrl;
+                    video.play();
+                }
+            } catch (e) {
+                log("Error: " + e.message);
+            }
+        }
+        init();
+    </script>
+</body>
+</html>
