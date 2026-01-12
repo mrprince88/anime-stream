@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Premium anime streaming experience",
 };
 
+import { Analytics } from "@vercel/analytics/react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,6 +24,7 @@ export default function RootLayout({
         <main className="min-h-screen">
           {children}
         </main>
+        <Analytics />
       </body>
     </html>
   );
